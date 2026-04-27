@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+/* PitchSplit wordmark only — files: src/assets/Agweiro Trial.otf / .ttf */
+@font-face {
+  font-family: 'Agweiro Trial';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src:
+    url('./assets/Agweiro Trial.otf') format('opentype'),
+    url('./assets/Agweiro Trial.ttf') format('truetype');
+}
+
+@theme {
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+}
+
+/* App-wide base tweaks */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply min-h-screen font-sans antialiased text-slate-900 bg-slate-50;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+/* Wordmark in PitchSplitLogo.jsx — not the rest of the app */
+.pitchsplit-wordmark-text {
+  font-family: 'Agweiro Trial', ui-sans-serif, system-ui, sans-serif;
+}
