@@ -71,7 +71,7 @@ export default function AdminLogin() {
           <div className=" mb-5 block text-[10px] font-medium text-slate-700">
             <div className="mt-2 space-y-2">
 
-              <div className='grid grid-cols-4 gap-2'>
+              <div className='grid md:grid-cols-4 grid-cols-2 gap-2'>
                 {quickUsers.map((user) => (
                   <label
                     key={user.value}

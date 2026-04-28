@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PitchSplitWordmark } from '../components/PitchSplitLogo'
 import { getMatch, updateMatch } from '../services/supabase'
 import { useToastStore } from '../store/toastStore'
+import { useAuthStore } from '../store/authStore'
 import { Spinner } from '../components/Spinner'
 import { formatMoney } from '../utils/money'
 
@@ -23,6 +24,7 @@ export default function EditMatch() {
   const { id } = useParams()
   const navigate = useNavigate()
   const show = useToastStore((s) => s.show)
+  const admin = useAuthStore((s) => s.admin)
 
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -222,7 +224,20 @@ export default function EditMatch() {
           </label>
 
           <label className="mt-5 block text-sm font-medium text-slate-800">
-            Paid by
+            <div className="flex items-center justify-between gap-3">
+              <span>Paid by</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const username = String(admin?.username || '').trim()
+                  if (username) setPaidBy(username)
+                }}
+                disabled={!String(admin?.username || '').trim()}
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Paid by me
+              </button>
+            </div>
             <input
               type="text"
               className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
