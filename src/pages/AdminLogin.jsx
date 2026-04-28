@@ -6,6 +6,13 @@ import { useAuthStore } from '../store/authStore'
 import { useToastStore } from '../store/toastStore'
 
 export default function AdminLogin() {
+  const quickUsers = [
+    { label: 'Abdullah', value: 'Abdullah' },
+    { label: 'Hassan', value: 'Hassan' },
+    { label: 'Furqan', value: 'Furqan' },
+    { label: 'Junaid', value: 'Junaid' },
+  ]
+
   const login = useAuthStore((s) => s.login)
   const isAuthed = useAuthStore((s) => s.isAuthed)
   const show = useToastStore((s) => s.show)
@@ -14,7 +21,9 @@ export default function AdminLogin() {
   const from = location.state?.from?.pathname || '/admin'
 
   const [username, setUsername] = useState('')
+  const [selectedUser, setSelectedUser] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const supabaseReady = isSupabaseConfigured()
@@ -27,7 +36,8 @@ export default function AdminLogin() {
     e.preventDefault()
     setBusy(true)
     try {
-      const res = await login(username, password)
+      const effectiveUsername = selectedUser || username
+      const res = await login(effectiveUsername, password)
       if (res.ok) {
         show('Welcome back.', 'success')
         navigate(from, { replace: true })
@@ -58,27 +68,70 @@ export default function AdminLogin() {
           onSubmit={onSubmit}
           className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/70"
         >
+          <div className=" mb-5 block text-[10px] font-medium text-slate-700">
+            <div className="mt-2 space-y-2">
+
+              <div className='grid grid-cols-4 gap-2'>
+                {quickUsers.map((user) => (
+                  <label
+                    key={user.value}
+                    className="text-[10px] flex cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm transition hover:border-emerald-300 hover:bg-emerald-50/30"
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      checked={selectedUser === user.value}
+                      onChange={() => {
+                        if (selectedUser === user.value) {
+                          setSelectedUser('')
+                          setUsername('')
+                          return
+                        }
+                        setSelectedUser(user.value)
+                        setUsername(user.value)
+                      }}
+                    />
+                    <span>{user.label}</span>
+                  </label>
+                ))}
+
+              </div>
+            </div>
+          </div>
+
           <label className="block text-sm font-medium text-slate-700">
             Username
             <input
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-emerald-600/0 transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-600/15"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-emerald-600/0 transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-600/15 disabled:cursor-not-allowed disabled:bg-slate-100"
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              required
+              required={!selectedUser}
+              disabled={Boolean(selectedUser)}
             />
           </label>
 
           <label className="mt-4 block text-sm font-medium text-slate-700">
             Password
-            <input
-              type="password"
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-emerald-600/0 transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-600/15"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-14 text-sm outline-none ring-emerald-600/0 transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-600/15"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 my-1 mr-2 rounded-xl px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </label>
 
           <button
@@ -89,7 +142,7 @@ export default function AdminLogin() {
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
 
-          {supabaseReady ? (
+          {/* {supabaseReady ? (
             <p className="mt-4 text-center text-xs text-slate-500">
               Sign-in is checked against your Supabase{' '}
               <span className="font-mono">admins</span> table.
@@ -100,7 +153,7 @@ export default function AdminLogin() {
               <span className="font-mono">admin</span> /{' '}
               <span className="font-mono">admin</span>
             </p>
-          )}
+          )} */}
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">

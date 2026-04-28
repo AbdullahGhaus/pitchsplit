@@ -219,6 +219,12 @@ export default function AdminDashboard() {
                           >
                             Details
                           </Link>
+                          <Link
+                            className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
+                            to={`/admin/match/${m.id}/edit`}
+                          >
+                            Edit
+                          </Link>
                           {/* <Link
                             className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
                             to={`/match/${m.id}`}

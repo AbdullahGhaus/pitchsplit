@@ -177,6 +177,120 @@ export async function deleteMatch(matchId) {
 
 /**
  * @param {string} matchId
+ * @param {{
+ *   match_date: string
+ *   paid_by?: string | null
+ *   total_amount: number
+ *   playerNames: string[]
+ *   costs?: { venue_cost: number, gear_cost: number, refreshment_cost: number, additional_cost: number, total_amount: number }
+ *   per_head?: number
+ * }} input
+ */
+export async function updateMatch(
+  matchId,
+  { match_date, paid_by, total_amount, playerNames, costs, per_head },
+) {
+  const client = getClientOrThrow()
+  const names = normalizeNames(playerNames)
+  if (names.length === 0) {
+    throw new Error('At least one player is required.')
+  }
+
+  const total = Number(total_amount)
+  const breakdown =
+    costs && typeof costs === 'object'
+      ? {
+          venue_cost: Number(costs.venue_cost) || 0,
+          gear_cost: Number(costs.gear_cost) || 0,
+          refreshment_cost: Number(costs.refreshment_cost) || 0,
+          additional_cost: Number(costs.additional_cost) || 0,
+          total_amount: Number(costs.total_amount) || total,
+        }
+      : {
+          venue_cost: 0,
+          gear_cost: 0,
+          refreshment_cost: 0,
+          additional_cost: 0,
+          total_amount: total,
+        }
+
+  const share =
+    typeof per_head === 'number' && Number.isFinite(per_head)
+      ? per_head
+      : names.length > 0
+        ? total / names.length
+        : total
+
+  const paidByValue =
+    paid_by != null && String(paid_by).trim() !== ''
+      ? String(paid_by).trim()
+      : null
+
+  const { data: existingPlayers, error: existingPlayersError } = await client
+    .from('players')
+    .select('name, has_paid')
+    .eq('match_id', matchId)
+
+  if (existingPlayersError) {
+    throw new Error(existingPlayersError.message || 'Could not fetch match players.')
+  }
+
+  const hasPaidByName = new Map()
+  for (const row of existingPlayers || []) {
+    const key = String(row.name || '').trim().toLowerCase()
+    if (!key || hasPaidByName.has(key)) continue
+    hasPaidByName.set(key, Boolean(row.has_paid))
+  }
+
+  const { data: match, error: matchError } = await client
+    .from('matches')
+    .update({
+      match_date: String(match_date).trim(),
+      paid_by: paidByValue,
+      total_amount: total,
+      costs: breakdown,
+      per_head: share,
+      players: names,
+    })
+    .eq('id', matchId)
+    .select(
+      'id, match_date, paid_by, total_amount, costs, per_head, players, created_at',
+    )
+    .single()
+
+  if (matchError) {
+    throw new Error(matchError.message || 'Could not update match.')
+  }
+
+  const { error: removePlayersError } = await client
+    .from('players')
+    .delete()
+    .eq('match_id', matchId)
+
+  if (removePlayersError) {
+    throw new Error(removePlayersError.message || 'Could not replace match players.')
+  }
+
+  const playersToInsert = names.map((name) => ({
+    match_id: matchId,
+    name,
+    has_paid: Boolean(hasPaidByName.get(String(name).toLowerCase())),
+  }))
+
+  const { data: players, error: playersError } = await client
+    .from('players')
+    .insert(playersToInsert)
+    .select('id, match_id, name, has_paid')
+
+  if (playersError) {
+    throw new Error(playersError.message || 'Could not update match players.')
+  }
+
+  return { match, players: players || [] }
+}
+
+/**
+ * @param {string} matchId
  * @param {string} playerId
  * @param {boolean} [has_paid] — if omitted, toggles current value
  */

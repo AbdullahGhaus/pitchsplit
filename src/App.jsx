@@ -5,6 +5,7 @@ import { ToastContainer } from './components/ToastContainer'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminLogin from './pages/AdminLogin'
 import CreateMatch from './pages/CreateMatch'
+import EditMatch from './pages/EditMatch'
 import MatchAdmin from './pages/MatchAdmin'
 import MatchPublic from './pages/MatchPublic'
 
@@ -107,6 +108,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <MatchAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/match/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditMatch />
             </ProtectedRoute>
           }
         />

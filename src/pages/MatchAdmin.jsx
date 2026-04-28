@@ -126,6 +126,12 @@ export default function MatchAdmin() {
           </div>
 
           <div className="flex flex-col gap-2 sm:items-end">
+            <Link
+              to={`/admin/match/${match.id}/edit`}
+              className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 shadow-sm hover:bg-emerald-100"
+            >
+              Edit match
+            </Link>
             <button
               type="button"
               onClick={onCopy}

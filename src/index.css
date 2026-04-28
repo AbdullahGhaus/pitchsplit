@@ -18,6 +18,7 @@
 
 /* App-wide base tweaks */
 html {
+  font-size: 90%;
   -webkit-tap-highlight-color: transparent;
 }
 
