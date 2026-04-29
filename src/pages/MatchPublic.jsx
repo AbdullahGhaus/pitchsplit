@@ -142,7 +142,7 @@ export default function MatchPublic() {
                 ))}
               </ul>
             )}
-            
+
             {!costLines &&
               match.costs &&
               typeof match.costs === 'object' &&
@@ -151,6 +151,7 @@ export default function MatchPublic() {
                   Line-item costs were not recorded for this match (e.g. older
                   data).
                 </p>
+                
               )}
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
