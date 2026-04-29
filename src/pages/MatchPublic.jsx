@@ -142,6 +142,7 @@ export default function MatchPublic() {
                 ))}
               </ul>
             )}
+            
             {!costLines &&
               match.costs &&
               typeof match.costs === 'object' &&
