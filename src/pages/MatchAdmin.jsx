@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PitchSplitWordmark } from '../components/PitchSplitLogo'
-import { getMatch } from '../services/supabase'
+import { getMatch, setMatchPaymentsLocked } from '../services/supabase'
 import { formatMoney } from '../utils/money'
 import { getMatchHeading } from '../utils/date'
 import { copyToClipboard } from '../utils/clipboard'
@@ -22,6 +22,7 @@ export default function MatchAdmin() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [copyBusy, setCopyBusy] = useState(false)
+  const [unlockBusy, setUnlockBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -67,6 +68,24 @@ export default function MatchAdmin() {
     }
   }
 
+  async function unlockPublicPayments() {
+    if (!id || !data?.match?.payments_locked) return
+    setUnlockBusy(true)
+    try {
+      await setMatchPaymentsLocked(id, false)
+      const res = await getMatch(id)
+      setData(res)
+      show(
+        'Public squad link unlocked. Players can update payment status until everyone is paid again.',
+        'success',
+      )
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'Could not unlock payments.', 'error')
+    } finally {
+      setUnlockBusy(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
@@ -99,6 +118,7 @@ export default function MatchAdmin() {
 
   const { match, players } = data
   const costLines = costBreakdownLines(match)
+  const paymentsLocked = Boolean(match.payments_locked)
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -126,6 +146,16 @@ export default function MatchAdmin() {
           </div>
 
           <div className="flex flex-col gap-2 sm:items-end">
+            {paymentsLocked && (
+              <button
+                type="button"
+                onClick={() => unlockPublicPayments()}
+                disabled={unlockBusy}
+                className="inline-flex w-full items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-950 shadow-sm hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {unlockBusy ? 'Unlocking…' : 'Unlock public payment edits'}
+              </button>
+            )}
             <Link
               to={`/admin/match/${match.id}/edit`}
               className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 shadow-sm hover:bg-emerald-100"
@@ -151,6 +181,16 @@ export default function MatchAdmin() {
       </div>
 
       <div className="mx-auto w-full max-w-5xl px-4 py-8">
+        {paymentsLocked && (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-4 shadow-sm ring-1 ring-emerald-100/80">
+            <p className="text-sm font-semibold text-emerald-950">All payments done — public link locked</p>
+            <p className="mt-1 text-xs leading-relaxed text-emerald-900/85">
+              Everyone in the squad is marked paid, so the shared match page no longer allows changing payment status.
+              You can still edit match details (date, costs, squad) from here. Use “Unlock public payment edits” above if
+              someone needs to correct their status on the public page.
+            </p>
+          </div>
+        )}
         {stats && (
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -235,7 +275,9 @@ export default function MatchAdmin() {
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-sm font-semibold text-slate-900">Players</h2>
             <p className="mt-0.5 text-xs text-slate-500">
-              Payment status updates when players use the public link.
+              {paymentsLocked
+                ? 'Payments are complete; the public page is read-only until you unlock it.'
+                : 'Payment status updates when players use the public link.'}
             </p>
           </div>
           <div className="overflow-x-auto">

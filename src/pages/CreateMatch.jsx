@@ -1,21 +1,42 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PitchSplitWordmark } from '../components/PitchSplitLogo'
-import { createMatch, listDefaultPlayers } from '../services/supabase'
+import { createMatch, listDefaultPlayersWithOrder } from '../services/supabase'
 import { useToastStore } from '../store/toastStore'
 import { useAuthStore } from '../store/authStore'
 import { Spinner } from '../components/Spinner'
 import { formatMoney } from '../utils/money'
+import {
+  evaluateCostExpression,
+  interpretedCostPkR,
+} from '../utils/costExpression'
 
 function todayISODate() {
   return new Date().toISOString().slice(0, 10)
 }
 
-/** Non-negative finite number from a loose input string. */
-function parseCostInput(s) {
-  const n = Number(String(s).replace(/,/g, '').trim())
-  if (!Number.isFinite(n) || n < 0) return 0
-  return n
+function costFieldInvalid(raw) {
+  const t = String(raw).trim()
+  if (!t) return false
+  return !evaluateCostExpression(raw).ok
+}
+
+function CostEvalHint({ value }) {
+  const t = String(value).trim()
+  if (!t) return null
+  const r = evaluateCostExpression(value)
+  if (!r.ok) {
+    return (
+      <p className="mt-1 pl-0.5 text-[10px] font-medium leading-tight text-rose-600">
+        Invalid — use numbers and + − × / ( ) only
+      </p>
+    )
+  }
+  return (
+    <p className="mt-1 pl-0.5 text-[10px] font-medium leading-tight tabular-nums text-slate-500">
+      = {formatMoney(r.value)}
+    </p>
+  )
 }
 
 /**
@@ -119,10 +140,19 @@ export default function CreateMatch() {
 
   const totalAmount = useMemo(
     () =>
-      parseCostInput(venueCost) +
-      parseCostInput(gearCost) +
-      parseCostInput(refreshmentCost) +
-      parseCostInput(otherCost),
+      interpretedCostPkR(venueCost) +
+      interpretedCostPkR(gearCost) +
+      interpretedCostPkR(refreshmentCost) +
+      interpretedCostPkR(otherCost),
+    [venueCost, gearCost, refreshmentCost, otherCost],
+  )
+
+  const hasInvalidCostField = useMemo(
+    () =>
+      costFieldInvalid(venueCost) ||
+      costFieldInvalid(gearCost) ||
+      costFieldInvalid(refreshmentCost) ||
+      costFieldInvalid(otherCost),
     [venueCost, gearCost, refreshmentCost, otherCost],
   )
 
@@ -143,21 +173,26 @@ export default function CreateMatch() {
     return (
       Boolean(matchDate) &&
       Boolean(paidBy.trim()) &&
+      !hasInvalidCostField &&
       totalAmount > 0 &&
       names.length > 0 &&
       Number.isFinite(perHead)
     )
-  }, [matchDate, paidBy, totalAmount, billableNames, perHead])
+  }, [matchDate, paidBy, hasInvalidCostField, totalAmount, billableNames, perHead])
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
         setDefaultsLoading(true)
-        const players = await listDefaultPlayers()
+        const players = await listDefaultPlayersWithOrder()
         if (!cancelled) {
           setDefaultPlayerRows(
-            players.map((name) => ({ name, included: true })),
+            players.map((row) => ({
+              id: row.id,
+              name: row.name,
+              included: true,
+            })),
           )
         }
       } catch (err) {
@@ -219,10 +254,10 @@ export default function CreateMatch() {
         total_amount: totalAmount,
         playerNames: allPlayers,
         costs: {
-          venue_cost: parseCostInput(venueCost),
-          gear_cost: parseCostInput(gearCost),
-          refreshment_cost: parseCostInput(refreshmentCost),
-          additional_cost: parseCostInput(otherCost),
+          venue_cost: interpretedCostPkR(venueCost),
+          gear_cost: interpretedCostPkR(gearCost),
+          refreshment_cost: interpretedCostPkR(refreshmentCost),
+          additional_cost: interpretedCostPkR(otherCost),
           total_amount: totalAmount,
         },
         per_head: perHead,
@@ -313,48 +348,67 @@ export default function CreateMatch() {
           <div className="mt-6">
             <p className="text-sm font-medium text-slate-800">Costs (PKR)</p>
             <p className="mt-0.5 text-xs text-slate-500">
-              All amounts are summed into the match total below.
+              Type a plain amount or an expression (e.g.{' '}
+              <span className="font-mono text-[11px]">400*3</span>,{' '}
+              <span className="font-mono text-[11px]">(1000+500)/10</span>).
+              Lines show the interpreted PKR sum; totals add each line’s result.
             </p>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium text-slate-700">
                 Venue cost
                 <input
-                  inputMode="decimal"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  spellCheck={false}
                   className={costInputClass}
-                  placeholder="0"
+                  placeholder="0 or 400*3"
                   value={venueCost}
                   onChange={(e) => setVenueCost(e.target.value)}
                 />
+                <CostEvalHint value={venueCost} />
               </label>
               <label className="block text-sm font-medium text-slate-700">
                 Gear cost
                 <input
-                  inputMode="decimal"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  spellCheck={false}
                   className={costInputClass}
-                  placeholder="0"
+                  placeholder="0 or 500+120"
                   value={gearCost}
                   onChange={(e) => setGearCost(e.target.value)}
                 />
+                <CostEvalHint value={gearCost} />
               </label>
               <label className="block text-sm font-medium text-slate-700">
                 Refreshment cost
                 <input
-                  inputMode="decimal"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  spellCheck={false}
                   className={costInputClass}
                   placeholder="0"
                   value={refreshmentCost}
                   onChange={(e) => setRefreshmentCost(e.target.value)}
                 />
+                <CostEvalHint value={refreshmentCost} />
               </label>
               <label className="block text-sm font-medium text-slate-700">
                 Additional cost
                 <input
-                  inputMode="decimal"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  spellCheck={false}
                   className={costInputClass}
                   placeholder="0"
                   value={otherCost}
                   onChange={(e) => setOtherCost(e.target.value)}
                 />
+                <CostEvalHint value={otherCost} />
               </label>
             </div>
           </div>
@@ -402,8 +456,14 @@ export default function CreateMatch() {
                 </div>
               ) : defaultPlayerRows.length === 0 ? (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-                  No default players found. Add rows in the{' '}
-                  <span className="font-mono">default_players</span> table.
+                  No default players found. Manage your squad defaults in{' '}
+                  <Link
+                    to="/admin/squad-defaults"
+                    className="font-semibold text-amber-950 underline underline-offset-2 hover:text-black"
+                  >
+                    Squad defaults
+                  </Link>
+                  .
                 </div>
               ) : (
                 defaultPlayerRows.map((row, idx) => {
@@ -412,9 +472,10 @@ export default function CreateMatch() {
                     additionalPlayers,
                     idx,
                   )
+                  const rowKey = row.id || `${row.name}-${idx}`
                   return (
                     <label
-                      key={`${row.name}-${idx}`}
+                      key={rowKey}
                       className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition ${
                         row.included
                           ? 'border-emerald-300 bg-emerald-50/80 ring-1 ring-emerald-200/60'

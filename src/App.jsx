@@ -8,6 +8,7 @@ import CreateMatch from './pages/CreateMatch'
 import EditMatch from './pages/EditMatch'
 import MatchAdmin from './pages/MatchAdmin'
 import MatchPublic from './pages/MatchPublic'
+import SquadDefaults from './pages/SquadDefaults'
 
 function Home() {
   return (
@@ -100,6 +101,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CreateMatch />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/squad-defaults"
+          element={
+            <ProtectedRoute>
+              <SquadDefaults />
             </ProtectedRoute>
           }
         />
