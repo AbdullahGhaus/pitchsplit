@@ -136,12 +136,20 @@ export default function SquadDefaults() {
           <Link to="/admin" className="shrink-0">
             <PitchSplitWordmark size="sm" iconClassName="h-9 w-9" />
           </Link>
-          <Link
-            to="/admin"
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-          >
-            Back to dashboard
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/admin/admins"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Admins & payments
+            </Link>
+            <Link
+              to="/admin"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Back to dashboard
+            </Link>
+          </div>
         </div>
       </header>
 

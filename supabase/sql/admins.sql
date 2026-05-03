@@ -66,3 +66,5 @@ GRANT EXECUTE ON FUNCTION public.login_admin(text, text) TO authenticated;
 --
 -- To rotate password:
 -- UPDATE public.admins SET password_hash = extensions.crypt('new_password', extensions.gen_salt('bf')) WHERE username = 'admin';
+--
+-- Dashboard “Admins & payments” page lists/updates payment_method via `admins_directory_rpcs.sql` RPCs (optional display_name is read-only in the UI).

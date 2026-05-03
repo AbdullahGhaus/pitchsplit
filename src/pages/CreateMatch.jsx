@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PitchSplitWordmark } from '../components/PitchSplitLogo'
 import { createMatch, listDefaultPlayersWithOrder } from '../services/supabase'
+import { listAdminPaymentDirectory } from '../services/adminDirectory'
 import { useToastStore } from '../store/toastStore'
 import { useAuthStore } from '../store/authStore'
 import { Spinner } from '../components/Spinner'
@@ -120,6 +121,41 @@ function additionalRowCountsTowardSplit(defaultRows, additionalPlayers, rowIdx) 
   return false
 }
 
+function FormSectionCard({ title, subtitle, actions, children, className = '' }) {
+  const hasHeader = Boolean(title || subtitle || actions)
+
+  return (
+    <section
+      className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-slate-950/4 sm:p-6 ${className}`.trim()}
+    >
+      {hasHeader ? (
+        <header className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="min-w-0 flex-1">
+            {title ? (
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">
+                {title}
+              </h2>
+            ) : null}
+            {subtitle ? (
+              <div
+                className={`text-xs leading-relaxed text-slate-500 ${title ? 'mt-1.5' : ''}`}
+              >
+                {subtitle}
+              </div>
+            ) : null}
+          </div>
+          {actions ? (
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              {actions}
+            </div>
+          ) : null}
+        </header>
+      ) : null}
+      {children}
+    </section>
+  )
+}
+
 export default function CreateMatch() {
   const navigate = useNavigate()
   const show = useToastStore((s) => s.show)
@@ -136,7 +172,10 @@ export default function CreateMatch() {
   const [defaultPlayerRows, setDefaultPlayerRows] = useState([])
   const [additionalPlayers, setAdditionalPlayers] = useState([''])
   const [defaultsLoading, setDefaultsLoading] = useState(true)
+  const [paidByAdmins, setPaidByAdmins] = useState([])
+  const [paidByAdminsLoading, setPaidByAdminsLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const paidByPrefillApplied = useRef(false)
 
   const totalAmount = useMemo(
     () =>
@@ -213,6 +252,43 @@ export default function CreateMatch() {
     }
   }, [show])
 
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        setPaidByAdminsLoading(true)
+        const rows = await listAdminPaymentDirectory()
+        if (!cancelled) setPaidByAdmins(rows)
+      } catch (err) {
+        if (!cancelled) {
+          setPaidByAdmins([])
+          show(
+            err instanceof Error ? err.message : 'Could not load admin list.',
+            'error',
+          )
+        }
+      } finally {
+        if (!cancelled) setPaidByAdminsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [show])
+
+  useEffect(() => {
+    if (paidByPrefillApplied.current || paidByAdminsLoading) return
+    if (String(paidBy).trim() !== '') return
+    const u = String(admin?.username ?? '').trim()
+    if (!u) return
+    const hasRow = paidByAdmins.some(
+      (a) => a.username.toLowerCase() === u.toLowerCase(),
+    )
+    if (!hasRow) return
+    setPaidBy(u)
+    paidByPrefillApplied.current = true
+  }, [paidBy, paidByAdmins, paidByAdminsLoading, admin?.username])
+
   function addAdditionalPlayer() {
     setAdditionalPlayers((p) => [...p, ''])
   }
@@ -223,6 +299,19 @@ export default function CreateMatch() {
 
   function updateAdditionalPlayer(idx, value) {
     setAdditionalPlayers((p) => p.map((x, i) => (i === idx ? value : x)))
+  }
+
+  const allDefaultsIncluded =
+    defaultPlayerRows.length > 0 &&
+    defaultPlayerRows.every((row) => row.included)
+
+  function toggleSelectAllDefaults() {
+    setDefaultPlayerRows((rows) => {
+      if (rows.length === 0) return rows
+      const everyoneIn = rows.every((r) => r.included)
+      const target = !everyoneIn
+      return rows.map((r) => ({ ...r, included: target }))
+    })
   }
 
   function shareCellLabel(countsTowardSplit) {
@@ -290,11 +379,11 @@ export default function CreateMatch() {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Create match
             </h1>
-            <p className="mt-1 text-sm text-slate-600">
+            {/* <p className="mt-1 text-sm text-slate-600">
               Enter costs in PKR (they sum to the match total), then confirm the
               squad — per-player share updates live as you adjust costs or
               players.
-            </p>
+            </p> */}
           </div>
           <Link
             to="/admin"
@@ -304,24 +393,28 @@ export default function CreateMatch() {
           </Link>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <label className="block text-sm font-medium text-slate-800">
-            Match date
+        <form onSubmit={onSubmit} className="flex flex-col gap-5">
+          <FormSectionCard
+            title="Match date"
+            subtitle="The playing day for this fixture."
+          >
+            <label className="sr-only" htmlFor="create-match-date">
+              Match date
+            </label>
             <input
+              id="create-match-date"
               type="date"
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
               value={matchDate}
               onChange={(e) => setMatchDate(e.target.value)}
               required
             />
-          </label>
+          </FormSectionCard>
 
-          <label className="mt-5 block text-sm font-medium text-slate-800">
-            <div className="flex items-center justify-between gap-3">
-              <span>Paid by</span>
+          <FormSectionCard
+            title="Paid by"
+            subtitle="Choose an admin for the payer name, or type a custom label. This appears on the public match link."
+            actions={
               <button
                 type="button"
                 onClick={() => {
@@ -329,31 +422,83 @@ export default function CreateMatch() {
                   if (username) setPaidBy(username)
                 }}
                 disabled={!String(admin?.username || '').trim()}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Paid by me
               </button>
-            </div>
-            <input
-              type="text"
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-              placeholder="e.g. organiser or payer name"
-              value={paidBy}
-              onChange={(e) => setPaidBy(e.target.value)}
-              autoComplete="off"
-              required
-            />
-          </label>
+            }
+          >
+            {paidByAdminsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Spinner />
+                Loading admins…
+              </div>
+            ) : paidByAdmins.length > 0 ? (
+              <div
+                className="flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-2.5"
+                role="group"
+                aria-label="Choose payer from admins"
+              >
+                {paidByAdmins.map((row) => {
+                  const checked =
+                    paidBy.trim().toLowerCase() ===
+                    row.username.trim().toLowerCase()
+                  const label =
+                    row.display_name?.trim() || row.username
 
-          <div className="mt-6">
-            <p className="text-sm font-medium text-slate-800">Costs (PKR)</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Type a plain amount or an expression (e.g.{' '}
-              <span className="font-mono text-[11px]">400*3</span>,{' '}
-              <span className="font-mono text-[11px]">(1000+500)/10</span>).
-              Lines show the interpreted PKR sum; totals add each line’s result.
-            </p>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  return (
+                    <label
+                      key={row.id}
+                      title={label}
+                      className={`inline-flex min-h-8 max-w-full cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 pl-2 text-xs font-medium transition sm:text-[13px] ${checked
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-200/70'
+                        : 'border-slate-200 bg-slate-50/80 text-slate-800 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-3 w-3 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0 sm:h-3.5 sm:w-3.5"
+                        checked={checked}
+                        onChange={() => {
+                          if (checked) setPaidBy('')
+                          else setPaidBy(row.username)
+                        }}
+                      />
+                      <span className="min-w-0 max-w-44 truncate sm:max-w-56">
+                        {label}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            ) : null}
+
+            <label className="mt-4 block text-sm font-medium text-slate-800">
+              Payer name (stored on match)
+              <input
+                type="text"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                placeholder="Matches an admin username or any custom label"
+                value={paidBy}
+                onChange={(e) => setPaidBy(e.target.value)}
+                autoComplete="off"
+                required
+              />
+            </label>
+          </FormSectionCard>
+
+          <FormSectionCard
+            title="Costs (PKR)"
+            subtitle={
+              <>
+                Enter plain amounts or expressions (e.g.{' '}
+                <span className="font-mono text-[11px] text-slate-600">400*3</span>,{' '}
+                <span className="font-mono text-[11px] text-slate-600">(1000+500)/10</span>). Each field shows its
+                interpreted value; totals add all four lines.
+              </>
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium text-slate-700">
                 Venue cost
                 <input
@@ -411,44 +556,24 @@ export default function CreateMatch() {
                 <CostEvalHint value={otherCost} />
               </label>
             </div>
-          </div>
+          </FormSectionCard>
 
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
-              Total amount
-            </p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-950">
-              {formatMoney(totalAmount)}
-            </p>
-            <p className="mt-1 text-xs text-emerald-900/80">
-              Sum of venue, gear, refreshment, and additional costs.
-            </p>
-            {playerCount > 0 && (
-              <p className="mt-3 border-t border-emerald-200/80 pt-3 text-sm text-emerald-900">
-                <span className="font-semibold">{playerCount}</span> in split
-                →{' '}
-                <span className="font-bold tabular-nums">
-                  {perHead !== null ? formatMoney(perHead) : '—'}
-                </span>{' '}
-                per player
-              </p>
-            )}
-          </div>
-
-          <div className="mt-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-slate-800">
-                  Default squad
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  From your database — included by default; turn off anyone not
-                  playing. Share shown when a player counts toward the split.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 space-y-2">
+          <FormSectionCard
+            title="Default squad"
+            subtitle="From your squad defaults — toggle off players not in this match. Share shows only for names that count toward the split."
+            actions={
+              !defaultsLoading && defaultPlayerRows.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => toggleSelectAllDefaults()}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                >
+                  {allDefaultsIncluded ? 'Deselect all' : 'Select all'}
+                </button>
+              ) : null
+            }
+          >
+            <div className="space-y-2">
               {defaultsLoading ? (
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <Spinner className="size-4 border-slate-300 border-t-slate-600" />
@@ -512,26 +637,22 @@ export default function CreateMatch() {
                 })
               )}
             </div>
+          </FormSectionCard>
 
-            <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-slate-800">
-                  Additional players (this match only)
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Not stored as defaults — only added to this match.
-                </p>
-              </div>
+          <FormSectionCard
+            title="Additional players"
+            subtitle="Extra names for this match only — not saved to squad defaults."
+            actions={
               <button
                 type="button"
                 onClick={addAdditionalPlayer}
                 className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
               >
-                Add additional player
+                Add player
               </button>
-            </div>
-
-            <div className="mt-3 space-y-2">
+            }
+          >
+            <div className="space-y-2">
               {additionalPlayers.map((p, idx) => {
                 const counts = additionalRowCountsTowardSplit(
                   defaultPlayerRows,
@@ -571,17 +692,43 @@ export default function CreateMatch() {
                 )
               })}
             </div>
-            <p className="mt-2 text-xs text-slate-500">
+            {/* <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-500">
               Empty additional rows are ignored. Duplicate names only count once.
               At least one player in the split and a total greater than 0 are
               required.
+            </p> */}
+          </FormSectionCard>
+
+          <FormSectionCard
+            title="Totals"
+            subtitle="Match total from your costs, split across everyone in the squad above."
+            className="border-emerald-200/90 bg-linear-to-br from-emerald-50/80 via-white to-white ring-emerald-900/10"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+              Total amount
             </p>
-          </div>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-950">
+              {formatMoney(totalAmount)}
+            </p>
+            <p className="mt-1 text-xs text-emerald-900/80">
+              Sum of venue, gear, refreshment, and additional costs.
+            </p>
+            {playerCount > 0 ? (
+              <p className="mt-4 border-t border-emerald-200/70 pt-4 text-sm text-emerald-900">
+                <span className="font-semibold">{playerCount}</span> in split
+                {' → '}
+                <span className="font-bold tabular-nums">
+                  {perHead !== null ? formatMoney(perHead) : '—'}
+                </span>{' '}
+                per player
+              </p>
+            ) : null}
+          </FormSectionCard>
 
           <button
             type="submit"
             disabled={!canSubmit || busy}
-            className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white shadow-md shadow-emerald-900/15 ring-1 ring-emerald-700/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {busy && (
               <Spinner className="size-4 border-white/40 border-t-white" />

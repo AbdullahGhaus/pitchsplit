@@ -2,12 +2,37 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PitchSplitWordmark } from '../components/PitchSplitLogo'
 import { bulkSetPlayersPaid, getMatch, updatePlayerPayment } from '../services/supabase'
+import {
+  fetchPaymentMethodForPaidByLabel,
+  normalizePaymentMethod,
+} from '../services/adminDirectory'
+import { copyToClipboard } from '../utils/clipboard'
 import { formatMoney } from '../utils/money'
 import { costBreakdownLines } from '../utils/matchCostBreakdown'
 import { getMatchHeading } from '../utils/date'
 import { useToastStore } from '../store/toastStore'
 import { PlayerAvatar } from '../components/PlayerAvatar'
 import { Spinner } from '../components/Spinner'
+
+function CopyClipboardIcon({ className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9 9 0 019 9zm0 0h3.375c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125h-3.75M9.75 9.75h.008v.008H9.75V9.75z"
+      />
+    </svg>
+  )
+}
 
 export default function MatchPublic() {
   const { id } = useParams()
@@ -18,6 +43,9 @@ export default function MatchPublic() {
   const [error, setError] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [payerPm, setPayerPm] = useState(() => normalizePaymentMethod({}))
+  const [payerPmLoading, setPayerPmLoading] = useState(false)
+  const [copyAccountBusy, setCopyAccountBusy] = useState(false)
 
   /** Unpaid-only selection for bulk “Mark as paid”. */
   const [selectedUnpaidIds, setSelectedUnpaidIds] = useState(() => new Set())
@@ -44,6 +72,31 @@ export default function MatchPublic() {
       cancelled = true
     }
   }, [id])
+
+  useEffect(() => {
+    const raw = data?.match?.paid_by
+    const label = raw != null ? String(raw).trim() : ''
+    if (!label) {
+      setPayerPm(normalizePaymentMethod({}))
+      setPayerPmLoading(false)
+      return
+    }
+    let cancelled = false
+    setPayerPmLoading(true)
+      ; (async () => {
+        try {
+          const pm = await fetchPaymentMethodForPaidByLabel(label)
+          if (!cancelled) setPayerPm(pm)
+        } catch {
+          if (!cancelled) setPayerPm(normalizePaymentMethod({}))
+        } finally {
+          if (!cancelled) setPayerPmLoading(false)
+        }
+      })()
+    return () => {
+      cancelled = true
+    }
+  }, [data?.match?.paid_by])
 
   const share = useMemo(() => {
     if (!data?.match || !data.players?.length) return null
@@ -83,6 +136,15 @@ export default function MatchPublic() {
     (n, pid) => n + (selectedUnpaidIds.has(pid) ? 1 : 0),
     0,
   )
+
+  /** PKR owed for bulk-selected unpaid rows (same per-head share for each). */
+  const bulkSelectionTotal = useMemo(() => {
+    const n = selectedUnpaidIds.size
+    if (share == null || n === 0) return null
+    const t = n * share
+    return Number.isFinite(t) ? t : null
+  }, [share, selectedUnpaidIds])
+
   const allUnpaidSelected = numUnpaid > 0 && selCount === numUnpaid
   const someSelected = selCount > 0 && !allUnpaidSelected
 
@@ -130,6 +192,21 @@ export default function MatchPublic() {
       show(e instanceof Error ? e.message : 'Could not update payment.', 'error')
     } finally {
       setBusyId(null)
+    }
+  }
+
+  async function copyPayerAccountNumber() {
+    const n = payerPm.account_number?.trim()
+    if (!n) return
+    setCopyAccountBusy(true)
+    try {
+      const ok = await copyToClipboard(n)
+      show(
+        ok ? 'Account number copied to clipboard.' : 'Could not copy.',
+        ok ? 'success' : 'error',
+      )
+    } finally {
+      setCopyAccountBusy(false)
     }
   }
 
@@ -183,6 +260,13 @@ export default function MatchPublic() {
   const heading = getMatchHeading(match)
   const costLines = costBreakdownLines(match)
   const paymentsLocked = Boolean(match.payments_locked)
+  const paidByLabel =
+    match.paid_by != null && String(match.paid_by).trim() !== ''
+      ? String(match.paid_by).trim()
+      : ''
+  const showPayerPaymentBlock =
+    Boolean(paidByLabel) &&
+    (payerPmLoading || Boolean(payerPm.bank) || Boolean(payerPm.account_number))
 
   const selectionPaused = bulkBusy || busyId !== null
 
@@ -268,13 +352,59 @@ export default function MatchPublic() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
-          <span className="text-slate-500">Paid by </span>
-          <span className="font-medium text-slate-900">
-            {match.paid_by != null && String(match.paid_by).trim() !== ''
-              ? String(match.paid_by).trim()
-              : '—'}
-          </span>
+        <div className="mt-4 rounded-xl bg-white px-4 py-4 text-sm shadow-sm flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
+            <span className="text-slate-500">Paid by</span>
+            <span className="font-medium text-slate-900">
+              {paidByLabel || '—'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {showPayerPaymentBlock && (
+              <div className="flex min-h-9 min-w-0 flex-1 flex-nowrap items-center justify-end gap-2 text-sm sm:max-w-[min(100%,28rem)]">
+                {payerPmLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <Spinner />
+                    Loading…
+                  </div>
+                ) : (
+                  <>
+                    {String(payerPm.account_number ?? '').trim() ? (
+                      <div className="flex min-w-0 max-w-full items-center gap-3">
+                        <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5 text-right">
+                          <span className="w-full max-w-full truncate text-[10px] text-slate-600 leading-snug">
+                            {payerPm.bank?.trim() ? payerPm.bank.trim() : '—'}
+                          </span>
+                          <span className="w-full break-all font-mono text-[10px] text-slate-600 leading-snug tabular-nums text-slate-900">
+                            {String(payerPm.account_number).trim()}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={copyAccountBusy}
+                          onClick={() => copyPayerAccountNumber()}
+                          title="Copy account number"
+                          aria-label="Copy account number"
+                          className="inline-flex size-10 shrink-0 items-center justify-center self-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {copyAccountBusy ? (
+                            <Spinner className="size-4 border-slate-300 border-t-slate-700" />
+                          ) : (
+                            <CopyClipboardIcon className="size-5 -mt-1" />
+                          )}
+                        </button>
+                      </div>
+                    ) : payerPm.bank?.trim() ? (
+                      <span className="truncate text-[10px]">
+                        {payerPm.bank.trim()}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
 
         <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -339,9 +469,6 @@ export default function MatchPublic() {
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-slate-100 px-5 py-2.5 text-xs">
-                <span className="font-semibold uppercase tracking-wide text-slate-500">
-                  Bulk select
-                </span>
                 <button
                   type="button"
                   disabled={selectionPaused || numUnpaid === 0}
@@ -475,12 +602,19 @@ export default function MatchPublic() {
                 Saving…
               </>
             ) : (
-              <>
-                Mark as paid
-                <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs tabular-nums">
-                  {selectedUnpaidIds.size}
+              <span className="flex flex-col items-center gap-0.5 text-center leading-tight">
+                <span className="flex flex-wrap items-center justify-center gap-2">
+                  <span>Mark as paid</span>
+                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs tabular-nums">
+                    {selectedUnpaidIds.size}
+                  </span>
                 </span>
-              </>
+                {bulkSelectionTotal != null && (
+                  <span className="text-[10px] font-semibold tabular-nums tracking-tight text-white/85">
+                    {formatMoney(bulkSelectionTotal)} total
+                  </span>
+                )}
+              </span>
             )}
           </button>
         </div>

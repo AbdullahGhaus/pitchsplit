@@ -538,6 +538,12 @@ export default function AdminDashboard() {
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Link
+              to="/admin/admins"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Admins & payments
+            </Link>
+            <Link
               to="/admin/squad-defaults"
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
             >
@@ -739,6 +745,12 @@ export default function AdminDashboard() {
                 className="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
               >
                 Create new match
+              </Link>
+              <Link
+                to="/admin/admins"
+                className="inline-flex rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+              >
+                Admins & payments
               </Link>
               <Link
                 to="/admin/squad-defaults"
