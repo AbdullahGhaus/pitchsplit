@@ -77,9 +77,9 @@ export default function AdminDirectory() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-[100dvh] bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4">
           <Link
             to="/admin"
             className="shrink-0 rounded-lg outline-none ring-emerald-600/0 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
@@ -113,7 +113,7 @@ export default function AdminDirectory() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           Admin payment details
         </h1>

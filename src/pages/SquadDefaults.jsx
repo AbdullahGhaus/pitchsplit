@@ -130,9 +130,9 @@ export default function SquadDefaults() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-[100dvh] bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4">
           <Link to="/admin" className="shrink-0">
             <PitchSplitWordmark size="sm" iconClassName="h-9 w-9" />
           </Link>
@@ -153,7 +153,7 @@ export default function SquadDefaults() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto w-full max-w-3xl px-3 py-6 sm:px-4 sm:py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Squad defaults

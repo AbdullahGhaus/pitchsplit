@@ -88,7 +88,7 @@ export default function MatchAdmin() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-100 px-3 sm:px-4">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm text-slate-700 shadow-sm">
           <Spinner />
           Loading match…
@@ -99,7 +99,7 @@ export default function MatchAdmin() {
 
   if (error || !data?.match) {
     return (
-      <div className="min-h-screen bg-slate-100 px-4 py-10">
+      <div className="min-h-[100dvh] bg-slate-100 px-3 py-8 sm:px-4 sm:py-10">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <h1 className="text-lg font-bold text-slate-900">Match not found</h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -121,9 +121,9 @@ export default function MatchAdmin() {
   const paymentsLocked = Boolean(match.payments_locked)
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-[100dvh] bg-slate-100">
       <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-3 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-4 sm:py-6">
           <div>
             <div className="mb-3">
               <Link to="/admin">
@@ -180,7 +180,7 @@ export default function MatchAdmin() {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-8">
+      <div className="mx-auto w-full max-w-5xl px-3 py-6 sm:px-4 sm:py-8">
         {paymentsLocked && (
           <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-4 shadow-sm ring-1 ring-emerald-100/80">
             <p className="text-sm font-semibold text-emerald-950">All payments done — public link locked</p>

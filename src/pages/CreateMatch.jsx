@@ -221,32 +221,32 @@ export default function CreateMatch() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        setDefaultsLoading(true)
-        const players = await listDefaultPlayersWithOrder()
-        if (!cancelled) {
-          setDefaultPlayerRows(
-            players.map((row) => ({
-              id: row.id,
-              name: row.name,
-              included: true,
-            })),
-          )
+      ; (async () => {
+        try {
+          setDefaultsLoading(true)
+          const players = await listDefaultPlayersWithOrder()
+          if (!cancelled) {
+            setDefaultPlayerRows(
+              players.map((row) => ({
+                id: row.id,
+                name: row.name,
+                included: true,
+              })),
+            )
+          }
+        } catch (err) {
+          if (!cancelled) {
+            show(
+              err instanceof Error
+                ? err.message
+                : 'Could not load default players.',
+              'error',
+            )
+          }
+        } finally {
+          if (!cancelled) setDefaultsLoading(false)
         }
-      } catch (err) {
-        if (!cancelled) {
-          show(
-            err instanceof Error
-              ? err.message
-              : 'Could not load default players.',
-            'error',
-          )
-        }
-      } finally {
-        if (!cancelled) setDefaultsLoading(false)
-      }
-    })()
+      })()
     return () => {
       cancelled = true
     }
@@ -254,23 +254,23 @@ export default function CreateMatch() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        setPaidByAdminsLoading(true)
-        const rows = await listAdminPaymentDirectory()
-        if (!cancelled) setPaidByAdmins(rows)
-      } catch (err) {
-        if (!cancelled) {
-          setPaidByAdmins([])
-          show(
-            err instanceof Error ? err.message : 'Could not load admin list.',
-            'error',
-          )
+      ; (async () => {
+        try {
+          setPaidByAdminsLoading(true)
+          const rows = await listAdminPaymentDirectory()
+          if (!cancelled) setPaidByAdmins(rows)
+        } catch (err) {
+          if (!cancelled) {
+            setPaidByAdmins([])
+            show(
+              err instanceof Error ? err.message : 'Could not load admin list.',
+              'error',
+            )
+          }
+        } finally {
+          if (!cancelled) setPaidByAdminsLoading(false)
         }
-      } finally {
-        if (!cancelled) setPaidByAdminsLoading(false)
-      }
-    })()
+      })()
     return () => {
       cancelled = true
     }
@@ -367,7 +367,7 @@ export default function CreateMatch() {
     'mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
+    <div className="min-h-[100dvh] bg-slate-50 px-3 py-6 sm:px-4 sm:py-8">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -573,7 +573,7 @@ export default function CreateMatch() {
               ) : null
             }
           >
-            <div className="space-y-2">
+            <div className="">
               {defaultsLoading ? (
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <Spinner className="size-4 border-slate-300 border-t-slate-600" />
@@ -591,50 +591,52 @@ export default function CreateMatch() {
                   .
                 </div>
               ) : (
-                defaultPlayerRows.map((row, idx) => {
-                  const counts = defaultRowCountsTowardSplit(
-                    defaultPlayerRows,
-                    additionalPlayers,
-                    idx,
-                  )
-                  const rowKey = row.id || `${row.name}-${idx}`
-                  return (
-                    <label
-                      key={rowKey}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition ${
-                        row.included
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{
+                  defaultPlayerRows.map((row, idx) => {
+                    const counts = defaultRowCountsTowardSplit(
+                      defaultPlayerRows,
+                      additionalPlayers,
+                      idx,
+                    )
+                    const rowKey = row.id || `${row.name}-${idx}`
+                    return (
+                      <label
+                        key={rowKey}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition ${row.included
                           ? 'border-emerald-300 bg-emerald-50/80 ring-1 ring-emerald-200/60'
                           : 'border-slate-200 bg-white opacity-75 hover:bg-slate-50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                        checked={row.included}
-                        onChange={() => {
-                          setDefaultPlayerRows((rows) =>
-                            rows.map((r, i) =>
-                              i === idx ? { ...r, included: !r.included } : r,
-                            ),
-                          )
-                        }}
-                      />
-                      <span className="min-w-0 flex-1 text-sm font-medium text-slate-900">
-                        {row.name}
-                      </span>
-                      <div className="flex shrink-0 flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-                        {shareCellLabel(counts)}
-                        <span
-                          className={`text-[10px] font-semibold uppercase tracking-wide ${
-                            row.included ? 'text-emerald-800' : 'text-slate-400'
                           }`}
-                        >
-                          {row.included ? 'Included' : 'Skipped'}
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          checked={row.included}
+                          onChange={() => {
+                            setDefaultPlayerRows((rows) =>
+                              rows.map((r, i) =>
+                                i === idx ? { ...r, included: !r.included } : r,
+                              ),
+                            )
+                          }}
+                        />
+                        <span className="min-w-0 flex-1 text-sm font-medium text-slate-900">
+                          {row.name}
                         </span>
-                      </div>
-                    </label>
-                  )
-                })
+                        {/* <div className="flex shrink-0 flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                          {shareCellLabel(counts)}
+                          <span
+                            className={`text-[10px] font-semibold uppercase tracking-wide ${
+                              row.included ? 'text-emerald-800' : 'text-slate-400'
+                            }`}
+                          >
+                            {row.included ? 'Included' : 'Skipped'}
+                          </span>
+                        </div> */}
+                      </label>
+                    )
+                  })
+                }
+                </div>
               )}
             </div>
           </FormSectionCard>

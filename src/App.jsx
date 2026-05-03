@@ -13,7 +13,7 @@ import AdminDirectory from './pages/AdminDirectory'
 
 function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-slate-50 to-slate-100 px-4 py-14">
+    <div className="min-h-[100dvh] bg-linear-to-b from-emerald-50 via-slate-50 to-slate-100 px-3 py-10 sm:px-4 sm:py-14">
       <div className="mx-auto max-w-3xl text-center">
         <div className="mb-8 flex justify-center">
           <PitchSplitWordmark size="lg" iconClassName="h-12 w-12 sm:h-14 sm:w-14" />
@@ -63,7 +63,7 @@ function Home() {
 
 function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-3 sm:px-4">
       <p className="text-lg font-bold text-slate-900">Page not found</p>
       <Link className="mt-4 text-sm font-semibold text-emerald-800" to="/">
         Go home

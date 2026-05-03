@@ -16,18 +16,26 @@
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 }
 
-/* App-wide base tweaks */
+/* App-wide base tweaks — typography uses rem/Tailwind, so scaling html affects type & spacing proportionally */
 html {
-  font-size: 90%;
+  font-size: 100%;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 639px) {
+  html {
+    font-size: 80%;
+  }
 }
 
 body {
-  @apply min-h-screen font-sans antialiased text-slate-900 bg-slate-50;
+  @apply min-h-[100dvh] overflow-x-clip font-sans antialiased text-slate-900 bg-slate-50;
 }
 
 #root {
-  @apply min-h-screen;
+  @apply isolate min-h-[100dvh];
 }
 
 /* Wordmark in PitchSplitLogo.jsx — not the rest of the app */

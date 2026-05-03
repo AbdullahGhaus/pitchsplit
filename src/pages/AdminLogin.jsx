@@ -50,7 +50,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-slate-50 to-slate-100 px-4 py-10">
+    <div className="min-h-[100dvh] bg-linear-to-b from-emerald-50 via-slate-50 to-slate-100 px-3 py-8 sm:px-4 sm:py-10">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">

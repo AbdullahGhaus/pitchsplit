@@ -14,7 +14,7 @@ export function ToastContainer() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-stretch gap-2 p-4 sm:items-end sm:p-6"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-stretch gap-2 px-3 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:items-end sm:px-6 sm:pb-6"
       aria-live="polite"
     >
       {toasts.map((t) => (

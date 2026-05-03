@@ -228,7 +228,7 @@ export default function MatchPublic() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-100 px-3 sm:px-4">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm text-slate-700 shadow-sm">
           <Spinner />
           Loading match…
@@ -239,7 +239,7 @@ export default function MatchPublic() {
 
   if (error || !data?.match) {
     return (
-      <div className="min-h-screen bg-slate-100 px-4 py-12">
+      <div className="min-h-[100dvh] bg-slate-100 px-3 py-10 sm:px-4 sm:py-12">
         <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <h1 className="text-lg font-bold text-slate-900">Match not found</h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -271,9 +271,9 @@ export default function MatchPublic() {
   const selectionPaused = bulkBusy || busyId !== null
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-28">
+    <div className="min-h-[100dvh] bg-slate-100 pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-5 sm:py-6">
+        <div className="mx-auto max-w-4xl px-3 py-4 sm:px-4 sm:py-5 md:py-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <PitchSplitWordmark size="sm" iconClassName="h-9 w-9 shrink-0" />
 
@@ -281,7 +281,7 @@ export default function MatchPublic() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
 
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
@@ -291,8 +291,8 @@ export default function MatchPublic() {
             {heading}
           </h1>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Match total
             </p>
@@ -327,7 +327,7 @@ export default function MatchPublic() {
               )}
 
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Per player share
             </p>
@@ -335,7 +335,7 @@ export default function MatchPublic() {
               {share === null ? '—' : formatMoney(share)}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Collection progress
             </p>
@@ -352,7 +352,7 @@ export default function MatchPublic() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl bg-white px-4 py-4 text-sm shadow-sm flex items-center justify-between">
+        <div className="mt-4 flex flex-col gap-3 rounded-xl bg-white px-3 py-4 text-sm shadow-sm ring-1 ring-slate-100 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
             <span className="text-slate-500">Paid by</span>
             <span className="font-medium text-slate-900">
@@ -589,7 +589,7 @@ export default function MatchPublic() {
       </main>
 
       {!paymentsLocked && selectedUnpaidIds.size > 0 && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-8 pt-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.5rem)] sm:px-4 sm:pb-8">
           <button
             type="button"
             disabled={bulkBusy}
